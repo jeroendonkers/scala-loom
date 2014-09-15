@@ -4,10 +4,18 @@ import scala.collection.mutable.SortedSet
 import scala.io.Source
 import java.io._
 
+// parses/interpret a string and store all patterns as named patterns
+
 object PatternParser extends JavaTokenParsers {
+   
+  // set to collect errors during parsing
    val errors: SortedSet[String] = SortedSet()
+   
    override def failure(msg: String) = { errors.add(msg); "" ~> super.failure("") }
    
+   // load the contents of a library. At the moment, 
+   // libraries must reside under a directory "patterns" and must be named
+   // ".lib".
     def load: Parser[String] = ">" ~ ident ^^ {
       case ">" ~ f => {
       if (Pattern.isdefined(f)) {
@@ -31,8 +39,8 @@ object PatternParser extends JavaTokenParsers {
         case x => x.toInt
     } 
     
-    def intlist : Parser[Nlist] = "["~>repsep(integer,",")<~"]" ^^ {
-      case ints => Nlist(ints)
+    def intlist : Parser[Pattern] = "["~>repsep(integer,",")<~"]" ^^ {
+      case ints => Pattern(ints)
     }
     
     def expr : Parser[Pattern] = chainl1(factor, 
@@ -72,6 +80,9 @@ object PatternParser extends JavaTokenParsers {
     
     def script: Parser[List[String]] = repsep(statement,";") <~ ";" | repsep(statement,";")
     
+    
+    // main function
+    
     def eval(input:String, complete: Boolean = true, clear: Boolean =true): Option[List[String]] = {
       
       if (clear) {
@@ -95,6 +106,8 @@ object PatternParser extends JavaTokenParsers {
       }
     }
     
+    
+    // check all patterns on semantic level for our loom
     
     def checkPatterns: Unit = {
         Pattern.getPatterns.foreach(s => Pattern(s).list.foreach(k=>if (k<0) {errors.add("E04 Incorrect number in "+s+"."); return} ))

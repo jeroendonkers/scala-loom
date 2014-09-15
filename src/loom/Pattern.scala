@@ -1,11 +1,13 @@
 package loom
 import scala.collection.mutable.Map 
 
+// patterns are basically lists of integers
+// these classes allow to build patterns out of other patterns
+// using operators +, -, * and named patterns.
 
-case class Nlist(n: List[Int]) extends Pattern
-case class Plist(p: List[Pattern]) extends Pattern
-case class Ptimes(t: Int, p: Pattern) extends Pattern
-case class ErrorPattern(s: String) extends Pattern
+sealed case class Nlist(n: List[Int]) extends Pattern
+sealed case class Plist(p: List[Pattern]) extends Pattern
+sealed case class Ptimes(t: Int, p: Pattern) extends Pattern
 
 abstract class Pattern {
    def toList(pat: Pattern): List[Int] = {
@@ -69,6 +71,9 @@ abstract class Pattern {
 
 
 object Pattern { 
+  
+ // factory functions  
+  
  def apply(l: List[Int]) = Nlist(l)
  def apply() = Nlist(List())
  def apply(a: Int) = Nlist(List(a))
@@ -80,6 +85,10 @@ object Pattern {
  def apply(s: String) = {
    if (patmap.isDefinedAt(s.toLowerCase)) patmap(s.toLowerCase) else null
  }
+ 
+ // patmap stores named patterns. Pattern names are stored lowercase.
+ 
+ private val patmap:Map[String,Pattern] = Map()
  
  def define(s: String, pat: Pattern) = {
    if (isdefined(s)) patmap(s.toLowerCase) = pat 
@@ -96,7 +105,7 @@ object Pattern {
    patmap.keys.iterator
  }
  
- val patmap:Map[String,Pattern] = Map()
+ 
  clearmap()
 }
 

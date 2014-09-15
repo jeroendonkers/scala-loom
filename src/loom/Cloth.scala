@@ -4,7 +4,16 @@ import java.awt.Color
 import java.awt.geom.Rectangle2D
 import java.awt.Paint
 
-
+// turning a weaving into a picture
+//
+// parameters:
+// - scale: size in pixels of each crossing
+// - weaving: output of loom.weave
+// - warpcolor, weftcolor: pattern containg color numbers
+//   (both patterns are repeated if needed to fit weaving size)
+// - colors: a list of awt.colors
+// - flipped: show heddles pulled up or heddles pulled down: front or back side
+// output: a bufferedImage
 
 object Cloth {
   
