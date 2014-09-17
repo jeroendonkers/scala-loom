@@ -9,7 +9,7 @@ import java.awt.Paint
 // parameters:
 // - scale: size in pixels of each crossing
 // - weaving: output of loom.weave
-// - warpcolor, weftcolor: pattern containg color numbers
+// - warpcolor, weftcolor: pattern containing color numbers
 //   (both patterns are repeated if needed to fit weaving size)
 // - colors: a list of awt.colors
 // - flipped: show heddles pulled up or heddles pulled down: front or back side
