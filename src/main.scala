@@ -19,7 +19,9 @@ class Canvas extends Panel {
   private[this] var flipped = false
   private[this] var zoom = 5
   
-  val colors: Array[Color] = Array(Color.WHITE,Color.BLACK,Color.RED,Color.GREEN)
+  val colors: Array[Color] = Array(Color.WHITE,Color.BLACK,Color.RED,Color.GREEN,
+      Color.GRAY, Color.GRAY, Color.GRAY, Color.GRAY, Color.GRAY, Color.GRAY)
+  val coloractive: Array[Boolean] = colors.map(c => false)    
   
   override def paint(g: Graphics2D) {
     g.setColor(Color.WHITE)
@@ -32,6 +34,7 @@ class Canvas extends Panel {
   
   def clear() {
     compiled=false
+    List.range(0,colors.size).foreach(k => coloractive(k)=false)
     repaint()
   }
   
@@ -54,11 +57,15 @@ class Canvas extends Panel {
          val loom = new Loom(Pattern("tieup"), Pattern("threading"))
          weaving = loom.weave(Pattern("pedalling"))
          List.range(0,colors.size).foreach(k => {
+           
              if (Pattern.isdefined("color"+(k+1))) {
               val rgb = Pattern("color"+(k+1)).list
               val col = new Color(rgb(0),rgb(1),rgb(2))
               setColor(k,col)
-          }
+              coloractive(k) = true
+             } else {
+              coloractive(k) = false
+             }
          })
         makeimage()     
         maximumSize = new Dimension(img.getWidth, img.getHeight)
@@ -122,14 +129,17 @@ class PngFilter extends javax.swing.filechooser.FileFilter  {
     }
 }
 
+
+
 class ColorButton(val color: Int) extends Button 
+class ColorMenuItem(val color: Int, action: Action) extends MenuItem(action)
 
 object main extends SimpleSwingApplication {
   var loaded = false
   var changed = false
   var file: File = null
   var actdir = new File("patterns/.")
-  
+  val  pngfilter = new javax.swing.filechooser.FileNameExtensionFilter("PNG FILES", "png", "png image");  
   
   def top = new MainFrame {
     var filename = "None"
@@ -205,11 +215,26 @@ object main extends SimpleSwingApplication {
         	tooltip = "Change color "+(k+1)
         	background = canvas.colors(k)
         	mnemonic = intKey(k)
+        	visible = false
         }
      )
-    
+     
+  val colormenus = List.range(0,canvas.colors.size).map(k =>
+    new ColorMenuItem(k,Action("color "+(k+1)) {
+          ColorChooser.showDialog(canvas, "Select color "+(k+1), canvas.colors(k)).foreach(
+                  c => { canvas.setColor(k,c); colorbuttons(k).background=c}  
+        ) }) { mnemonic = intKey(k)
+               visible = false }
+  )
+  
     def updateColorButtons = {
-      colorbuttons.foreach(b => b.background = canvas.colors(b.color))
+      colorbuttons.foreach(  b => { b.background = canvas.colors(b.color)
+          b.visible = canvas.coloractive(b.color)}
+       )
+      colormenus.foreach(m => {
+          m.visible = canvas.coloractive(m.color)}
+       )
+       
     }
      
     val buttonbar = new FlowPanel {
@@ -223,7 +248,6 @@ object main extends SimpleSwingApplication {
     val imagepanel =  new BorderPanel {
       layout(scrollpane) = Center
       layout(buttonbar) = South
- 
     } 
     
     contents = new SplitPane() {
@@ -279,10 +303,11 @@ object main extends SimpleSwingApplication {
              file = chooser.selectedFile
              loaded = true
              textArea.text = Source.fromFile(file).mkString
-             //textArea.revalidate
              changed=false
              filename = file.getName()
              makeTitle()
+             canvas.clear()
+             updateColorButtons
          }    
     }
     
@@ -294,28 +319,26 @@ object main extends SimpleSwingApplication {
        filename = "None"
        makeTitle()         
        canvas.clear()
+       updateColorButtons
     }
     
     def savePng() = {
          val chooser = new FileChooser(new File("."))
          chooser.title = "Save image as"
-         chooser.fileFilter =new PngFilter()
+         chooser.fileFilter = pngfilter
          val result = chooser.showSaveDialog(null)
          if (result == FileChooser.Result.Approve) {
-               canvas.saveImage(chooser.selectedFile)
+               if (chooser.selectedFile.getAbsolutePath().endsWith(".png")) 
+                  canvas.saveImage(chooser.selectedFile)
+               else   
+                  canvas.saveImage(new File(chooser.selectedFile.getAbsolutePath()+".png"))
          }     
     }
     
     menuBar = new MenuBar {
       contents += new Menu("Color") {
         mnemonic = Key.C
-        List.range(0,canvas.colors.size).foreach(k => 
-            contents += new MenuItem(Action("color "+(k+1)) {
-               ColorChooser.showDialog(this, "Select color "+(k+1), canvas.colors(k)).foreach(
-                  c => { canvas.setColor(k,c); colorbuttons(k).background=c}  
-               )
-            }) { mnemonic = intKey(k) }
-            )   
+        colormenus.foreach(m => contents += m)  
       } 
           
             

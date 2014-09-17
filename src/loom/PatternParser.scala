@@ -16,24 +16,39 @@ object PatternParser extends JavaTokenParsers {
    // load the contents of a library. At the moment, 
    // libraries must reside under a directory "patterns" and must be named
    // ".lib".
-    def load: Parser[String] = ">" ~ ident ^^ {
-      case ">" ~ f => {
+   
+    def check_load(f: String, fullpath: Boolean = false): Option[File] = {
       if (Pattern.isdefined(f)) {
          errors.add("E02 lib "+f+" already loaded")
-         ""
+         None
       } else {  
-         val lib = new File("patterns/"+f+".lib") 
+         var path = f 
+         if (!fullpath) path = "patterns/"+f+".lib" else path = f.substring(1,f.length()-1) 
+         val lib = new File(path)
          if (!lib.exists()) {
            errors.add("E02 lib "+f+" not found") 
-           ""
+           None
          } else {
-           val text = Source.fromFile(lib).mkString
-           val result = this.eval(text,false,false)
-           f + " loaded"
+           Some(lib)
          }
-        }  
-      }
-   } 
+      }  
+    }
+   
+    def load: Parser[String] = ">" ~ ident ^^ {
+      case ">" ~ f => {
+        check_load(f).foreach(lib => {
+             val text = Source.fromFile(lib).mkString
+             val result = this.eval(text,false,false)
+        })              
+        ""
+      }  } | ">" ~ stringLiteral ^^ {
+      case ">" ~ f => {
+        check_load(f,true).foreach(lib => {
+             val text = Source.fromFile(lib).mkString
+             val result = this.eval(text,false,false)
+        })              
+        ""
+      }}   
    
     def integer : Parser[Int] =  wholeNumber ^^ {
         case x => x.toInt
@@ -83,7 +98,7 @@ object PatternParser extends JavaTokenParsers {
     
     // main function
     
-    def eval(input:String, complete: Boolean = true, clear: Boolean =true): Option[List[String]] = {
+   def eval(input:String, complete: Boolean = true, clear: Boolean =true): Option[List[String]] = {
       
       if (clear) {
         errors.clear
